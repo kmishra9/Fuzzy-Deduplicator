@@ -1,7 +1,8 @@
 
 # coding: utf-8
 
-# In[22]:
+# In[ ]:
+
 
 #Imports & Setup
 
@@ -22,11 +23,12 @@ from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 
 
-# In[23]:
+# In[ ]:
 
-#Loading in data
 
-#Ensuring that a file path has been passed into the script
+# Loading in data
+
+# Ensuring that a file path has been passed into the script
 improper_arg_msg = "Improper arguments passed in - use 'python3 flag_duplicates.py [$filename$.csv]'"
 if len(sys.argv) < 2:
     assert False, improper_arg_msg
@@ -35,29 +37,44 @@ elif ".csv" not in sys.argv[1]:
     sys.argv[1] = "deduplicator_sample_data_scramble.csv"
 
 
-#Getting the roster and homework response paths
+# Getting the roster and homework response paths
 path = sys.argv[1]
 
 lab_confirmed_flu = pd.read_csv(sys.argv[1])
 lab_confirmed_flu
 
 
-# In[24]:
+# In[ ]:
+
 
 #Find Fuzzy string matches for each Patient
 try:
     patients = lab_confirmed_flu["Patient"]
 except:
-    lab_confirmed_flu["Patient"] = np.core.defchararray.add(lab_confirmed_flu['last_name'], lab_confirmed_flu['first_name'])
+    try:
+        lab_confirmed_flu["Patient"] = np.core.defchararray.add(lab_confirmed_flu['last_name'],
+                                                                lab_confirmed_flu['first_name'])
+    except:
+        lab_confirmed_flu["Patient"] = (np.asarray(lab_confirmed_flu["last_name"]) + 
+                                        " " + 
+                                        np.asarray(lab_confirmed_flu.first_name)
+                                       )
+    
+    
     patients = lab_confirmed_flu["Patient"]
 
 #The first match of each list will be the row the patient was from
-matches = [process.extract( query=patient, choices=patients, limit=max(25, int(len(patients) ** .5)) )
+matches = [process.extract(query=patient, 
+                           choices=patients, 
+                           limit=max(25, 
+                                     int(len(patients) ** .5)) 
+                          )
            for patient in patients]
 matches
 
 
-# In[28]:
+# In[ ]:
+
 
 #Find true duplicates and match them up
 
@@ -158,11 +175,26 @@ for patient_match_list in matches:
                                                patient_row['adenovirus']  == filtered_match_row['adenovirus'] and
                                                patient_row['metapneumovirus']  == filtered_match_row['metapneumovirus']
                                               )
-                            except:
-                                assert False, "All cases should've been covered"
-                                print(path)
-                                print("\n\nSample Patient Row:\n\n")
-                                print(patient_row)
+                            except: #CEIP Shoo the Flu 
+                                try:
+                                    Test_match = (patient_row['FLU TEST TYPE']  == filtered_match_row['FLU TEST TYPE'] and 
+                                                  patient_row['INFLUENZA ANTIGEN DETECTION']  == filtered_match_row['INFLUENZA ANTIGEN DETECTION'] and 
+                                                  patient_row['FLU B']  == filtered_match_row['FLU B'] and
+                                                  patient_row['INFLUENZA A H1']  == filtered_match_row['INFLUENZA A H1'] and
+                                                  patient_row['INFLUENZA A H3']  == filtered_match_row['INFLUENZA A H3'] and
+                                                  patient_row['2009 INF A/H1N1 RVP']  == filtered_match_row['2009 INF A/H1N1 RVP'] and
+                                                  patient_row['RSV A']  == filtered_match_row['RSV A'] and
+                                                  patient_row['RSV B']  == filtered_match_row['RSV B'] and
+                                                  patient_row['PARAINFLUENZA 1']  == filtered_match_row['PARAINFLUENZA 1'] and
+                                                  patient_row['PARAINFLUENZA 2']  == filtered_match_row['PARAINFLUENZA 2'] and
+                                                  patient_row['PARAINFLUENZA 3']  == filtered_match_row['PARAINFLUENZA 3']
+                                                 )
+                                
+                                except:
+                                    assert False, "All cases should've been covered"
+                                    print(path)
+                                    print("\n\nSample Patient Row:\n\n")
+                                    print(patient_row)
                             
                 is_match = DOB_match and Collected_match and Test_match
 
@@ -185,7 +217,8 @@ lab_confirmed_flu["Flag"] = flags
 lab_confirmed_flu
 
 
-# In[29]:
+# In[ ]:
+
 
 #Saving the result
 
@@ -195,14 +228,10 @@ new_path = path[:-4] + ".flagged_duplicates.csv"
 lab_confirmed_flu.to_csv(path_or_buf=new_path, index=False)
 
 
-# In[30]:
+# In[ ]:
+
 
 if len(all_matches_in_dataset) > 0:
     print("Dataset:", new_path)
     print("All matches in dataset:\n\n", all_matches_in_dataset)
-
-
-# In[ ]:
-
-
 
